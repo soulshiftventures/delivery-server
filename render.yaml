@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: operatorhq-delivery
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: FROM_EMAIL
+        value: delivery@krissanders.online
+      - key: PRICE_INSPECTAI
+        sync: false
