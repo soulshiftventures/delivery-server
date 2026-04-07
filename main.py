@@ -87,8 +87,8 @@ async def stripe_webhook(request: Request):
     if event["type"] == "checkout.session.completed":
         try:
             session      = event["data"]["object"]
-            # StripeObject doesn't have .get() — convert to plain dict first
-            session_dict     = session.to_dict_recursive() if hasattr(session, "to_dict_recursive") else dict(session)
+            # Use _data to get the raw dict from StripeObject
+            session_dict     = session._data if hasattr(session, "_data") else {}
             customer_details = session_dict.get("customer_details") or {}
             buyer_email      = customer_details.get("email") if isinstance(customer_details, dict) else None
             payment_link     = session_dict.get("payment_link")
