@@ -70,7 +70,8 @@ def send_pdf(to_email: str, product_file: str, product_name: str):
         },
         timeout=30,
     )
-    response.raise_for_status()
+    if not response.is_success:
+        raise Exception(f"Resend API error {response.status_code}: {response.text}")
 
 
 @app.post("/webhook/stripe")
