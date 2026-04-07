@@ -27,9 +27,9 @@ FROM_EMAIL              = os.environ.get("FROM_EMAIL", "delivery@krissanders.onl
 PRODUCTS_DIR            = Path(__file__).parent / "products"
 
 # ── Add products here ────────────────────────────────────────────────────────
-# Key: Stripe Price ID   Value: (filename in /products, display name)
+# Key: Stripe Payment Link ID (plink_...)   Value: (filename in /products, display name)
 PRODUCT_MAP = {
-    os.environ.get("PRICE_INSPECTAI", ""): (
+    os.environ.get("PLINK_INSPECTAI", ""): (
         "AI-Prompts-for-Home-Inspectors.pdf",
         "AI Prompts for Home Inspectors",
     ),
@@ -87,15 +87,13 @@ async def stripe_webhook(request: Request):
         raise HTTPException(status_code=400, detail="Invalid signature")
 
     if event["type"] == "checkout.session.completed":
-        session    = event["data"]["object"]
-        buyer_email = session.get("customer_details", {}).get("email")
-        line_items  = stripe.checkout.Session.list_line_items(session["id"], limit=5)
+        session      = event["data"]["object"]
+        buyer_email  = session.get("customer_details", {}).get("email")
+        payment_link = session.get("payment_link")
 
-        for item in line_items.data:
-            price_id = item.price.id
-            if price_id in PRODUCT_MAP:
-                filename, name = PRODUCT_MAP[price_id]
-                send_pdf(buyer_email, filename, name)
+        if payment_link and payment_link in PRODUCT_MAP:
+            filename, name = PRODUCT_MAP[payment_link]
+            send_pdf(buyer_email, filename, name)
 
     return {"status": "ok"}
 
