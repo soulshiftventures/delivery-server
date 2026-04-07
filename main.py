@@ -86,8 +86,15 @@ async def stripe_webhook(request: Request):
     if event["type"] == "checkout.session.completed":
         try:
             session      = event["data"]["object"]
-            buyer_email  = session.get("customer_details", {}).get("email")
+            customer_details = session.get("customer_details") or {}
+            if isinstance(customer_details, str):
+                customer_details = {}
+            buyer_email  = customer_details.get("email") if isinstance(customer_details, dict) else None
             payment_link = session.get("payment_link")
+
+            # Handle both string and object forms of payment_link
+            if isinstance(payment_link, dict):
+                payment_link = payment_link.get("id")
 
             print(f"DEBUG: payment_link={payment_link}, email={buyer_email}")
             print(f"DEBUG: PRODUCT_MAP keys={list(PRODUCT_MAP.keys())}")
