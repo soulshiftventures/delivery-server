@@ -1,5 +1,5 @@
 fastapi
 uvicorn[standard]
-stripe
+stripe==12.3.0
 python-dotenv
 httpx
