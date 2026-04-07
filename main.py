@@ -5,15 +5,12 @@ Catches Stripe webhooks → emails buyer the purchased PDF.
 Add products to PRODUCT_MAP — key is Stripe Price ID, value is file + name.
 """
 
-import os, smtplib, base64
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
-from email import encoders
+import os, base64, traceback
 from pathlib import Path
 
 import stripe
 from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -87,13 +84,24 @@ async def stripe_webhook(request: Request):
         raise HTTPException(status_code=400, detail="Invalid signature")
 
     if event["type"] == "checkout.session.completed":
-        session      = event["data"]["object"]
-        buyer_email  = session.get("customer_details", {}).get("email")
-        payment_link = session.get("payment_link")
+        try:
+            session      = event["data"]["object"]
+            buyer_email  = session.get("customer_details", {}).get("email")
+            payment_link = session.get("payment_link")
 
-        if payment_link and payment_link in PRODUCT_MAP:
-            filename, name = PRODUCT_MAP[payment_link]
-            send_pdf(buyer_email, filename, name)
+            print(f"DEBUG: payment_link={payment_link}, email={buyer_email}")
+            print(f"DEBUG: PRODUCT_MAP keys={list(PRODUCT_MAP.keys())}")
+
+            if payment_link and payment_link in PRODUCT_MAP:
+                filename, name = PRODUCT_MAP[payment_link]
+                print(f"DEBUG: sending {filename} to {buyer_email}")
+                send_pdf(buyer_email, filename, name)
+                print(f"DEBUG: send_pdf completed")
+            else:
+                print(f"DEBUG: payment_link not in PRODUCT_MAP")
+        except Exception as e:
+            print(f"ERROR: {traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=str(e))
 
     return {"status": "ok"}
 
